@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Supabase Setup Walkthrough · Wanderpass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --amber-50:#fffbeb; --amber-100:#fef3c7; --amber-200:#fde68a;
+    --amber-700:#b45309; --amber-800:#92400e; --amber-900:#78350f;
+    --supabase:#3ecf8e; --supabase-dark:#2f9f6f;
+    --ink:#1c1917; --ink-2:#44403c; --ink-3:#78716c;
+    --paper:#fafaf9; --line:#e7e5e4;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0;height:100%;background:var(--amber-50);color:var(--ink);font-family:"IBM Plex Sans Thai","Inter",system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  body{display:flex;flex-direction:column;overflow:hidden}
+
+  /* Top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.7);backdrop-filter:blur(8px);flex-shrink:0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600}
+  .brand .emoji{font-size:22px}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-3)}
+  .pill{background:var(--amber-100);color:var(--amber-900);padding:4px 10px;border-radius:999px;font-weight:500;font-size:12px}
+
+  /* Stage */
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;padding:40px;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:40px;display:none;animation:slideIn .5s ease both}
+  .slide.active{display:flex;gap:48px;align-items:center}
+  @keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+
+  /* Left: narrative */
+  .narrative{flex:0 0 380px;max-width:380px}
+  .step-num{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;background:var(--ink);color:var(--amber-50);border-radius:14px;font-weight:700;font-size:20px;font-family:"Inter",sans-serif;margin-bottom:18px}
+  .step-title{font-size:32px;font-weight:700;line-height:1.25;margin:0 0 14px;letter-spacing:-.5px}
+  .step-desc{font-size:16px;color:var(--ink-2);margin:0 0 22px}
+  .step-actions{display:flex;flex-direction:column;gap:10px;font-size:14px;color:var(--ink-2)}
+  .step-actions .action{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:12px}
+  .step-actions .num{flex-shrink:0;width:22px;height:22px;background:var(--amber-100);color:var(--amber-900);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;font-family:"Inter",sans-serif;margin-top:1px}
+  .tip{margin-top:20px;padding:14px 18px;background:var(--amber-100);border-radius:14px;font-size:14px;color:var(--amber-900);border-left:4px solid var(--amber-700)}
+  .tip strong{color:var(--amber-900)}
+
+  /* Right: mockup */
+  .mockup-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;height:100%}
+  .browser{width:100%;max-width:780px;background:#fff;border-radius:14px;box-shadow:0 30px 80px -20px rgba(0,0,0,.18),0 8px 20px -8px rgba(0,0,0,.1);border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column;max-height:100%}
+  .browser-chrome{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f5f5f4;border-bottom:1px solid var(--line);flex-shrink:0}
+  .dots{display:flex;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ed6a5e} .dot.y{background:#f5bf4f} .dot.g{background:#62c554}
+  .url-bar{flex:1;background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--ink-3);font-family:"JetBrains Mono",monospace}
+  .browser-body{padding:0;flex:1;overflow:hidden;position:relative;background:#fff}
+  .browser-body img{display:block;width:100%;height:auto}
+
+  /* Supabase mock UI */
+  .sb-nav{display:flex;align-items:center;gap:22px;padding:14px 22px;border-bottom:1px solid var(--line);font-size:13px}
+  .sb-logo{display:flex;align-items:center;gap:8px;font-weight:600}
+  .sb-logo .mark{width:18px;height:18px;background:linear-gradient(180deg,#3ecf8e,#2f9f6f);border-radius:3px;transform:rotate(45deg)}
+  .sb-content{padding:32px 28px;font-size:14px}
+  .sb-content h2{margin:0 0 18px;font-size:22px;font-weight:600}
+  .sb-form{display:flex;flex-direction:column;gap:14px;max-width:420px}
+  .sb-field label{display:block;font-size:12px;color:var(--ink-3);margin-bottom:4px;font-weight:500}
+  .sb-field input,.sb-field select{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit}
+  .sb-field input.filled{background:#fafaf9;color:var(--ink)}
+  .sb-btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;background:var(--supabase);color:#04261c;border:1px solid var(--supabase-dark);border-radius:6px;font-weight:600;font-size:13px;cursor:pointer}
+  .sb-btn.outline{background:#fff;color:var(--ink);border-color:var(--line);font-weight:500}
+
+  /* SQL editor mock */
+  .sql-shell{font-family:"JetBrains Mono",monospace;font-size:11.5px;background:#1c1917;color:#fbf0ce;padding:18px 20px;border-radius:8px;line-height:1.55;max-height:380px;overflow:hidden;position:relative}
+  .sql-shell .comment{color:#a8a29e}
+  .sql-shell .kw{color:#7dd3fc}
+  .sql-shell .str{color:#fcd34d}
+  .sql-shell .fade{position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(180deg,transparent,#1c1917)}
+
+  /* API keys panel */
+  .key-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#fafaf9;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+  .key-row .left{display:flex;flex-direction:column;gap:2px}
+  .key-row .label{font-size:11px;color:var(--ink-3);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+  .key-row .val{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink)}
+  .copy-btn{padding:5px 10px;background:#fff;border:1px solid var(--line);border-radius:6px;font-size:11px;cursor:pointer;color:var(--ink-2)}
+
+  /* Sidebar mock */
+  .sb-app{display:flex;height:100%}
+  .sb-sidebar{width:60px;background:#1c1917;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:18px;flex-shrink:0}
+  .sb-side-icon{width:34px;height:34px;border-radius:8px;background:#292524;display:flex;align-items:center;justify-content:center;color:#a8a29e;font-size:14px}
+  .sb-side-icon.active{background:#3ecf8e22;color:#3ecf8e}
+  .sb-main{flex:1;padding:24px 28px;overflow:hidden}
+
+  /* Code block in narrative tip */
+  code,kbd{font-family:"JetBrains Mono",monospace;font-size:12.5px;background:rgba(0,0,0,.06);padding:1px 6px;border-radius:4px}
+
+  /* Bottom controls */
+  .controls{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-top:1px solid var(--line);background:#fff;flex-shrink:0}
+  .dots-nav{display:flex;gap:8px}
+  .nav-dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:none;cursor:pointer;padding:0;transition:all .2s}
+  .nav-dot.active{background:var(--ink);width:24px;border-radius:4px}
+  .nav-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--ink);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;font-family:inherit}
+  .nav-btn:disabled{opacity:.35;cursor:not-allowed}
+  .nav-btn.ghost{background:transparent;color:var(--ink-2)}
+  .nav-btn.ghost:hover{color:var(--ink)}
+  .progress{font-size:13px;color:var(--ink-3);font-family:"Inter",sans-serif}
+  .play-toggle{padding:6px 12px;background:transparent;border:1px solid var(--line);border-radius:6px;font-size:12px;cursor:pointer;color:var(--ink-2);font-family:inherit}
+  .play-toggle.on{background:var(--amber-100);border-color:var(--amber-200);color:var(--amber-900)}
+
+  /* Annotation tag */
+  .anno{position:absolute;background:var(--amber-900);color:var(--amber-50);font-size:11px;padding:3px 8px;border-radius:4px;font-weight:600;font-family:"Inter",sans-serif;letter-spacing:.3px;box-shadow:0 4px 12px rgba(120,53,15,.4);z-index:5}
+  .anno::after{content:'';position:absolute;width:0;height:0;border-style:solid}
+  .anno.below::after{top:-6px;left:12px;border-width:0 6px 6px;border-color:transparent transparent var(--amber-900) transparent}
+  .anno.right::after{left:-6px;top:8px;border-width:6px 6px 6px 0;border-color:transparent var(--amber-900) transparent transparent}
+
+  /* Final slide */
+  .final{text-align:center;max-width:520px}
+  .final .check{font-size:64px;margin-bottom:14px}
+  .final h2{font-size:32px;margin:0 0 12px;font-weight:700}
+  .final p{color:var(--ink-2);margin:0 0 24px;font-size:16px}
+  .final .links{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .final a{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:10px;font-weight:600;text-decoration:none;font-size:15px}
+  .final a.primary{background:var(--ink);color:#fff}
+  .final a.outline{background:#fff;color:var(--ink);border:1px solid var(--line)}
+
+  @media (max-width:980px){
+    .slide.active{flex-direction:column;gap:24px}
+    .narrative{flex:0 0 auto;max-width:none;width:100%}
+    .stage{padding:24px}
+    .slide{inset:24px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="emoji">🧳</span>
+    <span>Wanderpass · Supabase Setup</span>
+  </div>
+  <div class="topbar-right">
+    <span class="pill">8 ขั้นตอน · ~5 นาที</span>
+    <span>กด <kbd>→</kbd> เพื่อไปต่อ</span>
+  </div>
+</div>
+
+<div class="stage" id="stage">
+
+  <!-- STEP 1 -->
+  <section class="slide active" data-step="1">
+    <div class="narrative">
+      <div class="step-num">1</div>
+      <h1 class="step-title">เปิด supabase.com แล้ว Sign in</h1>
+      <p class="step-desc">Supabase คือฐานข้อมูล + Auth + API พร้อมใช้ ฟรีจนถึง project แรกแบบเหลือเฟือ</p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span>ไปที่ <code>supabase.com</code> → กดปุ่ม <strong>Start your project</strong> สีเขียวมุมขวาบน</span></div>
+        <div class="action"><span class="num">2</span><span>เลือก <strong>Continue with GitHub</strong> (ง่ายและเร็วสุด — ใช้ account GitHub ที่คุณ push code ได้เลย)</span></div>
+      </div>
+      <div class="tip"><strong>💡 ทำไมต้อง GitHub?</strong> พรุ่งนี้คุณจะ push code ขึ้น GitHub แล้ว connect Vercel — ใช้ account เดียวกันให้หมดจะง่ายสุด</div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">https://supabase.com</div>
+        </div>
+        <div class="browser-body" style="padding:42px 32px;text-align:center;position:relative;background:#fff">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:50px">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px"><div style="width:18px;height:18px;background:linear-gradient(180deg,#3ecf8e,#2f9f6f);border-radius:3px;transform:rotate(45deg)"></div>supabase</div>
+            <div style="display:flex;gap:18px;font-size:13px;color:var(--ink-2)"><span>Product</span><span>Docs</span><span>Pricing</span><span style="background:#3ecf8e;color:#04261c;padding:5px 12px;border-radius:6px;font-weight:600">Dashboard</span></div>
+          </div>
+          <p style="font-size:13px;color:var(--ink-3);margin:0 0 12px">State of Startups 2026: Take the survey ›</p>
+          <h2 style="font-size:42px;margin:0;font-weight:700;letter-spacing:-1px">Build in a weekend</h2>
+          <h2 style="font-size:42px;margin:0 0 18px;font-weight:700;letter-spacing:-1px;color:#3ecf8e">Scale to millions</h2>
+          <p style="font-size:14px;color:var(--ink-2);max-width:480px;margin:0 auto 24px">Supabase is the Postgres development platform. Start your project with a Postgres database, Authentication, instant APIs, and more.</p>
+          <div style="position:relative;display:inline-block">
+            <button style="padding:11px 24px;background:#3ecf8e;color:#04261c;border:0;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer">Start your project</button>
+            <span class="anno below" style="top:-26px;left:50%;transform:translateX(-50%)">กดตรงนี้</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="slide" data-step="2">
+    <div class="narrative">
+      <div class="step-num">2</div>
+      <h1 class="step-title">สร้าง Project ใหม่</h1>
+      <p class="step-desc">หลัง login → คุณจะเห็นหน้า Dashboard. กด <strong>New project</strong> → กรอก 4 ช่องนี้</p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span><strong>Name:</strong> <code>wanderpass</code> (หรืออะไรก็ได้)</span></div>
+        <div class="action"><span class="num">2</span><span><strong>Database Password:</strong> กดปุ่ม Generate — แล้ว <strong>copy ไปเก็บไว้</strong> (ใช้ทีหลังถ้าจะเข้า DB ตรงๆ)</span></div>
+        <div class="action"><span class="num">3</span><span><strong>Region:</strong> เลือก <code>Southeast Asia (Singapore)</code> — ใกล้ที่สุด</span></div>
+        <div class="action"><span class="num">4</span><span><strong>Plan:</strong> <code>Free</code> (พอเหลือเฟือสำหรับ classroom)</span></div>
+      </div>
+      <div class="tip"><strong>⏱️ 2 นาที</strong> Supabase จะ provision project ให้ — ระหว่างรอไปเตรียม Anthropic API key ก่อนได้</div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">supabase.com/dashboard/new/_</div>
+        </div>
+        <div class="browser-body sb-app">
+          <div class="sb-sidebar"><div class="sb-side-icon">⌂</div><div class="sb-side-icon">▢</div><div class="sb-side-icon">≣</div></div>
+          <div class="sb-main">
+            <h2 style="margin:0 0 6px;font-size:22px;font-weight:600">Create a new project</h2>
+            <p style="margin:0 0 22px;color:var(--ink-3);font-size:13px">Your project will have its own dedicated instance.</p>
+            <div class="sb-form">
+              <div class="sb-field"><label>Project name</label><input class="filled" value="wanderpass" readonly /></div>
+              <div class="sb-field"><label>Database password</label><div style="display:flex;gap:6px"><input class="filled" value="●●●●●●●●●●●●●●●●" readonly style="flex:1" /><button class="sb-btn outline" style="padding:7px 12px">Generate</button></div></div>
+              <div class="sb-field"><label>Region</label><select class="filled"><option>Southeast Asia (Singapore) 🇸🇬</option></select></div>
+              <div class="sb-field"><label>Pricing Plan</label><div style="display:flex;gap:8px"><div style="flex:1;border:2px solid #3ecf8e;background:#3ecf8e11;padding:10px;border-radius:6px;font-size:12px"><strong>Free</strong><div style="color:var(--ink-3)">$0 / month</div></div><div style="flex:1;border:1px solid var(--line);padding:10px;border-radius:6px;font-size:12px"><strong>Pro</strong><div style="color:var(--ink-3)">$25 / month</div></div></div></div>
+              <div style="margin-top:8px;position:relative">
+                <button class="sb-btn" style="width:100%;padding:11px">Create new project</button>
+                <span class="anno below" style="top:-22px;right:10px">กดเลย</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="slide" data-step="3">
+    <div class="narrative">
+      <div class="step-num">3</div>
+      <h1 class="step-title">Copy API keys 3 ตัว</h1>
+      <p class="step-desc">หลัง project พร้อม → ไปที่ <strong>Project Settings (⚙️) → API</strong> ในเมนูซ้าย. คุณจะเจอ 3 ตัวที่ต้อง copy:</p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span><strong>Project URL</strong> — ขึ้นต้นด้วย <code>https://xxxx.supabase.co</code></span></div>
+        <div class="action"><span class="num">2</span><span><strong>anon public</strong> — key สำหรับ browser (เห็นได้ ไม่เป็นไร)</span></div>
+        <div class="action"><span class="num">3</span><span><strong>service_role secret</strong> — key สำหรับ server (<strong style="color:#b91c1c">ห้าม</strong>ใส่ใน code ที่ user เห็น)</span></div>
+      </div>
+      <div class="tip"><strong>📋 Tip:</strong> เปิด <code>.env.local</code> ในอีก tab รอไว้ — copy ทีละตัวมาวาง</div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">supabase.com/dashboard/project/.../settings/api</div>
+        </div>
+        <div class="browser-body sb-app">
+          <div class="sb-sidebar"><div class="sb-side-icon">⌂</div><div class="sb-side-icon">▢</div><div class="sb-side-icon active">⚙</div></div>
+          <div class="sb-main">
+            <h2 style="margin:0 0 18px;font-size:20px;font-weight:600">API Settings</h2>
+            <div class="key-row"><div class="left"><div class="label">Project URL</div><div class="val">https://abc123.supabase.co</div></div><button class="copy-btn">📋 Copy</button></div>
+            <div class="key-row"><div class="left"><div class="label">anon public</div><div class="val">eyJhbGciOiJIUzI1NiIs···</div></div><button class="copy-btn">📋 Copy</button></div>
+            <div class="key-row" style="border-color:#fca5a5;background:#fef2f2"><div class="left"><div class="label" style="color:#b91c1c">service_role · secret 🔒</div><div class="val">sbp_••••••••••••</div></div><button class="copy-btn">📋 Reveal & Copy</button></div>
+            <div style="margin-top:14px;padding:10px 14px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;font-size:12px;color:#b91c1c">⚠️ service_role bypasses ALL security rules. Server-side only.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="slide" data-step="4">
+    <div class="narrative">
+      <div class="step-num">4</div>
+      <h1 class="step-title">เปิด SQL Editor → New query</h1>
+      <p class="step-desc">นี่คือที่ที่คุณจะ "สั่ง" database ให้สร้าง tables. เมนูซ้ายมี icon <strong>SQL</strong></p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span>คลิก icon <strong>SQL Editor</strong> ที่ sidebar ซ้าย (รูป <code>&lt;/&gt;</code>)</span></div>
+        <div class="action"><span class="num">2</span><span>กดปุ่มเขียว <strong>+ New query</strong> มุมขวาบน</span></div>
+        <div class="action"><span class="num">3</span><span>เปิดไฟล์ <code>supabase/schema.sql</code> ในโปรเจกต์ → เลือกทั้งหมด → copy</span></div>
+        <div class="action"><span class="num">4</span><span>กลับมา paste ในช่อง SQL Editor</span></div>
+      </div>
+      <div class="tip"><strong>📂 ไฟล์อยู่ที่:</strong> <code>/Users/canchun/wanderpass-starter/supabase/schema.sql</code></div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">supabase.com/dashboard/project/.../sql/new</div>
+        </div>
+        <div class="browser-body sb-app">
+          <div class="sb-sidebar"><div class="sb-side-icon">⌂</div><div class="sb-side-icon active">&lt;/&gt;</div><div class="sb-side-icon">⚙</div></div>
+          <div class="sb-main">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0;font-size:18px;font-weight:600">SQL Editor · Untitled query</h2><div style="position:relative"><button class="sb-btn" style="padding:7px 14px">▶ Run</button><span class="anno below" style="top:-22px;right:0">กดหลัง paste</span></div></div>
+            <div class="sql-shell">
+              <span class="comment">-- Wanderpass · schema.sql</span><br/>
+              <span class="kw">create table if not exists</span> destinations (<br/>
+              &nbsp;&nbsp;id uuid <span class="kw">primary key default</span> gen_random_uuid(),<br/>
+              &nbsp;&nbsp;slug text <span class="kw">unique not null</span>,<br/>
+              &nbsp;&nbsp;name text <span class="kw">not null</span>,<br/>
+              &nbsp;&nbsp;emoji text <span class="kw">not null</span>,<br/>
+              &nbsp;&nbsp;...<br/>
+              );<br/><br/>
+              <span class="kw">create table if not exists</span> bookings (<br/>
+              &nbsp;&nbsp;id uuid <span class="kw">primary key default</span> gen_random_uuid(),<br/>
+              &nbsp;&nbsp;user_id uuid <span class="kw">references</span> auth.users(id),<br/>
+              &nbsp;&nbsp;...
+              <div class="fade"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section class="slide" data-step="5">
+    <div class="narrative">
+      <div class="step-num">5</div>
+      <h1 class="step-title">กด Run แล้วทำซ้ำกับ seed.sql</h1>
+      <p class="step-desc">หลัง paste schema.sql → กด <strong>Run</strong> (หรือ <kbd>⌘</kbd>+<kbd>Enter</kbd>) → จะเห็น <code>Success. No rows returned</code></p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span>ถ้าเห็น "Success" สีเขียว = ตารางทั้ง 3 ถูกสร้างแล้ว ✨</span></div>
+        <div class="action"><span class="num">2</span><span>กด <strong>+ New query</strong> อีกครั้ง</span></div>
+        <div class="action"><span class="num">3</span><span>เปิด <code>supabase/seed.sql</code> → copy ทั้งหมด → paste → Run</span></div>
+        <div class="action"><span class="num">4</span><span>คราวนี้จะเห็น <code>Success. 8 rows returned</code> = 8 destinations ถูก insert ✅</span></div>
+      </div>
+      <div class="tip"><strong>🐛 ถ้าเจอ error:</strong> มักเป็น "relation already exists" — ไม่เป็นไร script เขียนเป็น <code>if not exists</code> รัน safe</div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">supabase.com/dashboard/project/.../sql/new</div>
+        </div>
+        <div class="browser-body sb-app">
+          <div class="sb-sidebar"><div class="sb-side-icon">⌂</div><div class="sb-side-icon active">&lt;/&gt;</div><div class="sb-side-icon">⚙</div></div>
+          <div class="sb-main">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0;font-size:18px;font-weight:600">seed.sql</h2><button class="sb-btn" style="padding:7px 14px">▶ Run</button></div>
+            <div class="sql-shell" style="max-height:180px">
+              <span class="kw">insert into</span> destinations (slug,name,emoji,...) <span class="kw">values</span><br/>
+              &nbsp;(<span class="str">'bali'</span>, <span class="str">'Bali, Indonesia'</span>, <span class="str">'🏝️'</span>, ...),<br/>
+              &nbsp;(<span class="str">'tokyo'</span>, <span class="str">'Tokyo, Japan'</span>, <span class="str">'🗼'</span>, ...),<br/>
+              &nbsp;(<span class="str">'marrakech'</span>, <span class="str">'Marrakech, Morocco'</span>, ...),<br/>
+              &nbsp;...
+              <div class="fade"></div>
+            </div>
+            <div style="margin-top:14px;padding:12px 16px;background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;color:#065f46;font-size:13px;font-weight:500">✅ Success. 8 rows returned. <span style="color:#047857;font-weight:400">(0.18s)</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 6 -->
+  <section class="slide" data-step="6">
+    <div class="narrative">
+      <div class="step-num">6</div>
+      <h1 class="step-title">เปิดให้ Auth ใช้ localhost</h1>
+      <p class="step-desc">ตอน user คลิก magic link จาก email → Supabase ต้อง redirect กลับมาที่ app. ต้องบอกล่วงหน้าว่า URL ไหนใช้ได้</p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span>เมนูซ้าย → <strong>Authentication</strong> → <strong>URL Configuration</strong></span></div>
+        <div class="action"><span class="num">2</span><span>ที่ <strong>Site URL</strong> ใส่: <code>http://localhost:3200</code></span></div>
+        <div class="action"><span class="num">3</span><span>ที่ <strong>Redirect URLs</strong> add: <code>http://localhost:3200/**</code></span></div>
+        <div class="action"><span class="num">4</span><span>ทีหลังตอน deploy Vercel → add Vercel URL ด้วย เช่น <code>https://wanderpass.vercel.app/**</code></span></div>
+      </div>
+      <div class="tip"><strong>⚠️ ห้ามลืม step นี้</strong> ไม่งั้นนักเรียนจะเจอ error ตอน login</div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">supabase.com/dashboard/project/.../auth/url-configuration</div>
+        </div>
+        <div class="browser-body sb-app">
+          <div class="sb-sidebar"><div class="sb-side-icon">⌂</div><div class="sb-side-icon">&lt;/&gt;</div><div class="sb-side-icon active">👤</div></div>
+          <div class="sb-main">
+            <h2 style="margin:0 0 18px;font-size:18px;font-weight:600">Auth · URL Configuration</h2>
+            <div class="sb-form" style="max-width:none">
+              <div class="sb-field"><label>Site URL</label><input class="filled" value="http://localhost:3200" readonly /></div>
+              <div class="sb-field"><label>Redirect URLs <span style="color:var(--ink-3);font-weight:400">(one per line)</span></label><textarea style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;height:80px;background:#fafaf9" readonly>http://localhost:3200/**
+https://wanderpass.vercel.app/**</textarea></div>
+              <div style="margin-top:6px"><button class="sb-btn" style="padding:9px 18px">Save changes</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 7 -->
+  <section class="slide" data-step="7">
+    <div class="narrative">
+      <div class="step-num">7</div>
+      <h1 class="step-title">วางค่าใน .env.local</h1>
+      <p class="step-desc">เปิด Terminal ในโฟลเดอร์ project → สั่ง:</p>
+      <div class="step-actions">
+        <div class="action"><span class="num">1</span><span><code>cp .env.example .env.local</code></span></div>
+        <div class="action"><span class="num">2</span><span>เปิด <code>.env.local</code> ใน editor</span></div>
+        <div class="action"><span class="num">3</span><span>วาง 3 ค่าจาก Supabase + Anthropic API key</span></div>
+        <div class="action"><span class="num">4</span><span>เซฟ แล้ว restart dev server (<code>Ctrl+C</code> แล้ว <code>npm run dev</code>)</span></div>
+      </div>
+      <div class="tip"><strong>🔑 Anthropic API key:</strong> ไปขอที่ <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--amber-900);font-weight:600">console.anthropic.com</a></div>
+    </div>
+    <div class="mockup-wrap">
+      <div class="browser">
+        <div class="browser-chrome">
+          <div class="dots"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
+          <div class="url-bar">~/wanderpass-starter/.env.local</div>
+        </div>
+        <div class="browser-body" style="background:#1c1917;color:#fbf0ce;padding:24px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7">
+          <div style="color:#a8a29e"># Supabase</div>
+          <div>NEXT_PUBLIC_SUPABASE_URL=<span style="color:#fcd34d">https://abc123.supabase.co</span></div>
+          <div>NEXT_PUBLIC_SUPABASE_ANON_KEY=<span style="color:#fcd34d">eyJhbGciOi...</span></div>
+          <div>SUPABASE_SERVICE_ROLE_KEY=<span style="color:#fcd34d">sbp_•••</span></div>
+          <br/>
+          <div style="color:#a8a29e"># Anthropic</div>
+          <div>ANTHROPIC_API_KEY=<span style="color:#fcd34d">sk-ant-•••</span></div>
+          <br/>
+          <div style="background:#3ecf8e22;padding:8px 12px;border-radius:6px;color:#86efac;display:inline-block">✅ All set — restart dev server</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL -->
+  <section class="slide" data-step="8">
+    <div class="final" style="margin:0 auto">
+      <div class="check">🎉</div>
+      <h2>เสร็จแล้ว! Supabase พร้อม</h2>
+      <p>เปิด <a href="http://localhost:3200" target="_blank" style="color:var(--amber-900);font-weight:600">http://localhost:3200</a> รีเฟรช — banner เหลือง "Hey beginner" จะหายไป + เห็น 8 destinations จริงจาก Supabase ของคุณ ✨</p>
+      <div class="links">
+        <a href="http://localhost:3200" target="_blank" class="primary">→ เปิดแอป Wanderpass</a>
+        <a href="https://supabase.com/dashboard" target="_blank" class="outline">เปิด Supabase Dashboard</a>
+      </div>
+      <div style="margin-top:32px;padding:18px 22px;background:#fff;border:1px solid var(--line);border-radius:14px;text-align:left;font-size:14px;color:var(--ink-2)">
+        <strong style="color:var(--ink)">📚 Step ต่อไป:</strong> เปิด <code>TEACHING_GUIDE.md</code> เพื่อดู schedule สอนแต่ละ block สำหรับวันพรุ่งนี้
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="controls">
+  <button class="nav-btn ghost" id="prev">← Back</button>
+  <div style="display:flex;align-items:center;gap:18px">
+    <div class="dots-nav" id="dots"></div>
+    <span class="progress" id="progress">1 / 8</span>
+    <button class="play-toggle" id="play">▶ Auto-play</button>
+  </div>
+  <button class="nav-btn" id="next">Next →</button>
+</div>
+
+<script>
+(() => {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  let autoTimer = null;
+  let playing = false;
+
+  const dotsEl = document.getElementById('dots');
+  const progressEl = document.getElementById('progress');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const playBtn = document.getElementById('play');
+
+  // build dots
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('button');
+    d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Go to step ' + (i+1));
+    d.onclick = () => go(i);
+    dotsEl.appendChild(d);
+  }
+
+  function render() {
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    dotsEl.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    progressEl.textContent = (current + 1) + ' / ' + total;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  function go(i) {
+    current = Math.max(0, Math.min(total - 1, i));
+    render();
+    if (playing && current === total - 1) togglePlay();
+  }
+
+  function next() { go(current + 1); }
+  function prev() { go(current - 1); }
+
+  function togglePlay() {
+    playing = !playing;
+    playBtn.textContent = playing ? '⏸ Pause' : '▶ Auto-play';
+    playBtn.classList.toggle('on', playing);
+    if (playing) {
+      autoTimer = setInterval(() => {
+        if (current >= total - 1) togglePlay();
+        else next();
+      }, 8000);
+    } else {
+      clearInterval(autoTimer);
+    }
+  }
+
+  nextBtn.onclick = next;
+  prevBtn.onclick = prev;
+  playBtn.onclick = togglePlay;
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft') prev();
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End') go(total - 1);
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>

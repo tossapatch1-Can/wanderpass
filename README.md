@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🛂 Wanderpass
 
-## Getting Started
+> สมุดพาสปอร์ตการเดินทางดิจิทัล — เอารูปจริงของทริปที่เคยไปมาลง ระบบสร้างเป็น **แสตมป์การ์ตูนรายประเทศ** เขียนบันทึก แล้วแชร์ลงโซเชียลพร้อมลายน้ำ Wanvela · มี Trip Planner เลื่อนงบ + AI ช่วยร่างแผน
 
-First, run the development server:
+Built with **Next.js 16 (App Router) · TypeScript · Tailwind v4 · shadcn/ui · Supabase · Anthropic · Resend**. Mobile-first, navy/gold/cream, ภาษาไทย.
 
+---
+
+## หน้าจอ (PRD screens A–F)
+
+| Route | หน้า |
+|---|---|
+| `/` · `/login` | Landing + เข้าสู่ระบบด้วย Google (A) |
+| `/passport/[username]` | My Passport — แผนที่ + สถิติ + grid แสตมป์ (B) |
+| `/passport/add` | บันทึกทริป — เลือกประเทศ + อัปรูปจริง + comment (C) |
+| `/passport/[username]/country/[code]` | รายละเอียดประเทศ — แกลเลอรี + public/private + แก้ไข/ลบ/รายงาน (E) |
+| `/plan` | Trip Planner — slider งบ + AI itinerary → Wishlist (D) |
+| `/passport/[username]/share` | แชร์ — รูป + ลายน้ำ Wanvela → IG/FB/TikTok/ดาวน์โหลด (F) |
+| `/admin` | ผู้ดูแล — ผู้ใช้ · ประเทศยอดฮิต+แชร์ · คิวรายงาน · คลังแสตมป์ |
+
+---
+
+## Setup (สรุป)
+
+1. `npm install`
+2. สร้าง Supabase project แล้วทำตาม **[`supabase/SETUP.md`](supabase/SETUP.md)**:
+   - รัน `schema.sql` → `seed-countries.sql` → `storage.sql` ใน SQL Editor
+   - ตั้งค่า **Google OAuth** (Google Cloud + Supabase provider + redirect URLs)
+   - ตั้งค่า **Resend** (อีเมล) — ออปชัน
+3. `cp .env.example .env.local` แล้วใส่ค่า (Supabase, Anthropic, Resend, `NEXT_PUBLIC_SITE_URL`, `CRON_SECRET`)
+4. แก้ `ADMIN_EMAILS` ใน [`src/lib/admins.ts`](src/lib/admins.ts) เป็นอีเมลคุณ
+5. `npm run dev` → <http://localhost:3000>
+
+> ก่อนตั้งค่า Supabase แอปจะแสดงหน้า "เชื่อมต่อ Supabase" แทนการ crash
+
+---
+
+## โครงสร้างข้อมูล (`supabase/schema.sql`)
+
+`countries` (คลังแสตมป์ ~136 ประเทศ) · `trips` (1 ประเทศ = 1 แสตมป์) · `trip_photos` (รูปจริงใน Storage, ≤10/ประเทศ) · `wishlist` · `share_stats` · `reports` · `profiles`. ทุกตารางมี RLS — passport เป็น **private โดยค่าเริ่มต้น** เปิด public ได้รายประเทศ
+
+แสตมป์ทั้งหมด gen จาก [`scripts/countries.mjs`](scripts/countries.mjs):
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+node scripts/generate-stamps.mjs   # → public/stamps/<code>.svg
+node scripts/generate-seed.mjs     # → supabase/seed-countries.sql
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## รูปภาพ
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+อัปโหลดจาก browser ตรงเข้า Supabase Storage (ไม่ผ่าน Next route): แปลง HEIC→JPEG (`heic2any`), บีบอัด (`browser-image-compression`), ≤10MB/รูป · รับ JPG/PNG/HEIC/WebP
 
-## Learn More
+## งานเบื้องหลัง
 
-To learn more about Next.js, take a look at the following resources:
+- **อีเมลต้อนรับ** — ส่งครั้งแรกที่ login (ใน `auth/callback`)
+- **เตือน Wishlist** — `GET /api/notify/wishlist-reminders` (ป้องกันด้วย `CRON_SECRET`, เรียกรายสัปดาห์เช่น Vercel Cron)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## v2 / out of scope
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ราคาจริง trip.com/Agoda · ระบบจอง · OTP เบอร์โทร · ดาวน์โหลด PDF Travel Book · ตั้งค่าลายน้ำใน admin (v1 ลายน้ำเป็นข้อความ Wanvela คงที่) · หลายภาษา

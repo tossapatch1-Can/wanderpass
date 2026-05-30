@@ -1,0 +1,16 @@
+<!-- Template stamp — copy + modify for each destination.
+     Replace fill colors and the emoji/name in the seed SQL.
+     Beginners: ask Claude Code to generate more stamps in this style. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="1" fill="currentColor" opacity="0.15"/>
+    </pattern>
+  </defs>
+  <rect x="6" y="6" width="188" height="188" rx="14" fill="#FFF8E7" stroke="#C8924A" stroke-width="3" stroke-dasharray="6 4"/>
+  <rect x="14" y="14" width="172" height="172" rx="8" fill="url(#dots)" color="#C8924A"/>
+  <circle cx="100" cy="80" r="46" fill="#FFFFFF" stroke="#C8924A" stroke-width="2"/>
+  <text x="100" y="98" font-size="56" text-anchor="middle">🌍</text>
+  <text x="100" y="150" font-family="Georgia, serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#5B3A1E">DESTINATION</text>
+  <text x="100" y="170" font-family="Georgia, serif" font-size="10" text-anchor="middle" fill="#8A6531" letter-spacing="2">WANDERPASS</text>
+</svg>
